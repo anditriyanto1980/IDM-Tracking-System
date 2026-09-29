@@ -27,6 +27,7 @@ import { ShipmentFormModal } from '../../components/shipment/ShipmentFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { Pagination } from '../../components/common/Pagination';
 import { LoadingSkeleton, EmptyState } from '../../components/common/LoadingAndEmptyState';
+import { exportShipmentsTableToCsv } from '../../services/csvExportService';
 import {
   Search,
   Plus,
@@ -41,6 +42,7 @@ import {
   ArrowRight,
   Clock,
   MapPin,
+  Download,
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
@@ -221,29 +223,51 @@ export const ShipmentsPage: React.FC = () => {
     }
   };
 
+  const handleExportCsv = () => {
+    if (filteredShipments.length === 0) {
+      showToast('warning', 'Tidak Ada Data', 'Tidak ada data surat jalan yang sesuai filter untuk diekspor.');
+      return;
+    }
+    exportShipmentsTableToCsv(filteredShipments);
+    showToast('success', 'Export CSV Berhasil', `${filteredShipments.length} dokumen surat jalan berhasil diunduh ke format CSV.`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header & Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Shipment & Surat Jalan
+            Shipment &amp; Surat Jalan
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Manajemen penerbitan Surat Jalan resmi, armada logistik, dan pelacakan pengiriman kurma ke DC
           </p>
         </div>
 
-        {canManage && (
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsFormOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-800 rounded-lg hover:bg-sky-900 transition-colors shadow-xs"
+            onClick={handleExportCsv}
+            disabled={filteredShipments.length === 0}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Unduh rekap surat jalan ke format CSV untuk audit & pelaporan offline"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Terbitkan Surat Jalan</span>
+            <Download className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Export CSV ({filteredShipments.length})</span>
           </button>
-        )}
+
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-800 rounded-lg hover:bg-sky-900 transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Terbitkan Surat Jalan</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}

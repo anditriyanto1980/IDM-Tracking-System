@@ -367,9 +367,9 @@ export const UserGuidePdfPage: React.FC = () => {
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="font-bold text-slate-900 block mb-0.5">Tahap 8: Pusat Laporan Excel (.xlsx)</span>
+              <span className="font-bold text-slate-900 block mb-0.5">Tahap 8: Pusat Laporan Excel (.xlsx) &amp; Ekspor CSV Audit (.csv)</span>
               <p className="text-slate-600">
-                Buka menu <span className="font-semibold text-slate-800">Laporan &rarr; Executive Reports</span> untuk mengunduh 5 jenis spreadsheet: Laporan Forecast Nasional, Surat Jalan &amp; Armada, Rekap BAST DC, Klaim Kerusakan, atau Master Workbook lengkap.
+                Buka menu <span className="font-semibold text-slate-800">Laporan &rarr; Executive Reports</span> atau gunakan tombol <span className="font-semibold text-emerald-800">Export CSV</span> di halaman Live Tracking, Surat Jalan, Master DC, dan Activity Logs untuk mengunduh data tabel pelacakan distribusi dalam format CSV berstandar RFC-4180 dengan encoding UTF-8 BOM siap rekonsiliasi audit offline.
               </p>
             </div>
 

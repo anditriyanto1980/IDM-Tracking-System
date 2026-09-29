@@ -9,7 +9,14 @@ import {
 } from '../../services/reportService';
 import { getCustomers } from '../../services/customerService';
 import { getDistributionCenters } from '../../services/dcService';
-import { Customer, DistributionCenter } from '../../types';
+import { getShipments } from '../../services/shipmentService';
+import { getAllMilestones } from '../../services/trackingService';
+import {
+  exportTrackingTableToCsv,
+  exportShipmentsTableToCsv,
+  exportDistributionCentersToCsv,
+} from '../../services/csvExportService';
+import { Customer, DistributionCenter, ShipmentMilestone } from '../../types';
 import { PrintableReportModal } from '../../components/reports/PrintableReportModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -185,47 +192,96 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tahap 8: Dedicated Standalone Excel Reports Hub */}
-      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+      {/* Dedicated Standalone Excel & CSV Reports Hub for Offline & Audit */}
+      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xs">
         <div>
           <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5 mb-0.5">
             <Download className="w-3.5 h-3.5 text-emerald-700" />
-            Pusat Ekspor Laporan Excel Standalone (Tahap 8)
+            Pusat Ekspor Laporan Excel &amp; CSV (Offline Reporting &amp; Audit Support)
           </span>
           <p className="text-[11px] text-emerald-800">
-            Unduh laporan operasional spesifik per modul dalam format spreadsheet (.xlsx) siap pakai:
+            Unduh data operasional tracking dan distribusi dalam format Excel (.xlsx) atau CSV (.csv) untuk rekonsiliasi audit:
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Excel Buttons */}
           <button
             onClick={async () => {
               await exportForecastExcelReport();
-              showToast({ type: 'success', title: 'Export Forecast', message: 'Laporan forecast berhasil diunduh.' });
+              showToast({ type: 'success', title: 'Export Forecast', message: 'Laporan forecast Excel berhasil diunduh.' });
             }}
             className="px-2.5 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
           >
-            <span>Laporan Forecast</span>
+            <span>Excel Forecast</span>
           </button>
 
           <button
             onClick={async () => {
               await exportShipmentExcelReport();
-              showToast({ type: 'success', title: 'Export Surat Jalan', message: 'Rekap pengiriman surat jalan berhasil diunduh.' });
+              showToast({ type: 'success', title: 'Export Surat Jalan', message: 'Rekap pengiriman Excel berhasil diunduh.' });
             }}
             className="px-2.5 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
           >
-            <span>Rekap Surat Jalan</span>
+            <span>Excel Surat Jalan</span>
+          </button>
+
+          {/* CSV Export Buttons for Offline & Audit Support */}
+          <button
+            onClick={async () => {
+              try {
+                const [ships, miles] = await Promise.all([getShipments({}), getAllMilestones()]);
+                const map = new Map<string, ShipmentMilestone>();
+                miles.forEach((m) => {
+                  const existing = map.get(m.shipment_id);
+                  if (!existing || new Date(m.timestamp).getTime() > new Date(existing.timestamp).getTime()) {
+                    map.set(m.shipment_id, m);
+                  }
+                });
+                exportTrackingTableToCsv(ships, map);
+                showToast({ type: 'success', title: 'Export CSV Tracking', message: `${ships.length} data live tracking berhasil diunduh ke CSV.` });
+              } catch (e: any) {
+                showToast({ type: 'error', title: 'Gagal Ekspor CSV', message: e?.message || 'Terjadi kesalahan sistem.' });
+              }
+            }}
+            className="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+            title="Ekspor live tracking data pengiriman ke file CSV"
+          >
+            <Download className="w-3 h-3 text-emerald-300" />
+            <span>CSV Tracking</span>
           </button>
 
           <button
             onClick={async () => {
-              await exportBastExcelReport();
-              showToast({ type: 'success', title: 'Export BAST DC', message: 'Laporan pemeriksaan fisik DC & BAST berhasil diunduh.' });
+              try {
+                const ships = await getShipments({});
+                exportShipmentsTableToCsv(ships);
+                showToast({ type: 'success', title: 'Export CSV Surat Jalan', message: `${ships.length} data surat jalan berhasil diekspor ke CSV.` });
+              } catch (e: any) {
+                showToast({ type: 'error', title: 'Gagal Ekspor CSV', message: e?.message || 'Terjadi kesalahan sistem.' });
+              }
+            }}
+            className="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+            title="Ekspor rekap pengiriman ke file CSV"
+          >
+            <Download className="w-3 h-3 text-emerald-300" />
+            <span>CSV Pengiriman</span>
+          </button>
+
+          <button
+            onClick={async () => {
+              try {
+                const dcsList = await getDistributionCenters();
+                exportDistributionCentersToCsv(dcsList);
+                showToast({ type: 'success', title: 'Export CSV DC', message: `${dcsList.length} titik distribution center berhasil diekspor ke CSV.` });
+              } catch (e: any) {
+                showToast({ type: 'error', title: 'Gagal Ekspor CSV', message: e?.message || 'Terjadi kesalahan sistem.' });
+              }
             }}
             className="px-2.5 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+            title="Ekspor data master DC ke file CSV"
           >
-            <span>Pemeriksaan BAST DC</span>
+            <span>CSV Master DC</span>
           </button>
         </div>
       </div>

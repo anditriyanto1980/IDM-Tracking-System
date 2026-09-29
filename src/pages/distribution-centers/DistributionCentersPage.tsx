@@ -16,7 +16,8 @@ import { Pagination } from '../../components/common/Pagination';
 import { TableLoadingState, EmptyState, ErrorState } from '../../components/common/LoadingAndEmptyState';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { DcModal } from '../../components/master/DcModal';
-import { Search, Plus, Edit2, Power, Trash2, Phone, MapPin, Building2 } from 'lucide-react';
+import { exportDistributionCentersToCsv } from '../../services/csvExportService';
+import { Search, Plus, Edit2, Power, Trash2, Phone, MapPin, Building2, Download } from 'lucide-react';
 
 export const DistributionCentersPage: React.FC = () => {
   const { user, canAccess } = useAuth();
@@ -167,6 +168,15 @@ export const DistributionCentersPage: React.FC = () => {
 
   const paginatedDcs = dcs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const handleExportCsv = () => {
+    if (dcs.length === 0) {
+      showToast('warning', 'Tidak Ada Data', 'Tidak ada data DC yang sesuai filter untuk diekspor.');
+      return;
+    }
+    exportDistributionCentersToCsv(dcs);
+    showToast('success', 'Export CSV Berhasil', `${dcs.length} data Distribution Center berhasil diekspor ke CSV.`);
+  };
+
   return (
     <div className="space-y-4">
       {/* Top action header */}
@@ -178,15 +188,28 @@ export const DistributionCentersPage: React.FC = () => {
           </p>
         </div>
 
-        {canEdit && (
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-sky-900 hover:bg-sky-800 rounded-lg transition-colors cursor-pointer self-start sm:self-auto"
+            type="button"
+            onClick={handleExportCsv}
+            disabled={dcs.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Ekspor daftar master DC ke file CSV untuk offline audit"
           >
-            <Plus className="w-4 h-4" />
-            <span>Tambah DC Baru</span>
+            <Download className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Export CSV DC ({dcs.length})</span>
           </button>
-        )}
+
+          {canEdit && (
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-sky-900 hover:bg-sky-800 rounded-lg transition-colors cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah DC Baru</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

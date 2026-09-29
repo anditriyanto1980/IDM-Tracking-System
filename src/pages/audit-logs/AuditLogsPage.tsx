@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityLog } from '../../types';
 import { fetchActivityLogs } from '../../services/auditLogService';
+import { exportAuditLogsToCsv } from '../../services/csvExportService';
+import { useToast } from '../../hooks/useToast';
 import { TableLoadingState, EmptyState } from '../../components/common/LoadingAndEmptyState';
-import { Clock, Shield, Filter, RefreshCw } from 'lucide-react';
+import { Clock, Shield, Filter, RefreshCw, Download, FileSpreadsheet } from 'lucide-react';
 
 export const AuditLogsPage: React.FC = () => {
+  const { showToast } = useToast();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [moduleFilter, setModuleFilter] = useState<string>('all');
@@ -31,6 +34,15 @@ export const AuditLogsPage: React.FC = () => {
     const matchAction = actionFilter === 'all' || log.action === actionFilter;
     return matchModule && matchAction;
   });
+
+  const handleExportCsv = () => {
+    if (filteredLogs.length === 0) {
+      showToast('warning', 'Tidak Ada Log', 'Tidak ada data log aktivitas yang sesuai filter untuk diekspor.');
+      return;
+    }
+    exportAuditLogsToCsv(filteredLogs);
+    showToast('success', 'Export CSV Audit Trail Berhasil', `${filteredLogs.length} catatan audit log operasional berhasil diunduh ke CSV.`);
+  };
 
   const getActionBadge = (action: ActivityLog['action']) => {
     switch (action) {
@@ -60,13 +72,26 @@ export const AuditLogsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={loadLogs}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors self-start sm:self-auto"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Segarkan Log</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleExportCsv}
+            disabled={filteredLogs.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 rounded-lg transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Ekspor seluruh jejak audit ke format CSV untuk audit offline dan arsip kepatuhan"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Export CSV Audit ({filteredLogs.length})</span>
+          </button>
+
+          <button
+            onClick={loadLogs}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors shadow-2xs cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Segarkan Log</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
